@@ -1,10 +1,10 @@
 package main
 
 import (
-	"strconv"
 	"bytes"
-	"crypto/sha256"
 	"time"
+	"log"
+	"encoding/gob"
 )
 
 type Block struct {
@@ -13,14 +13,6 @@ type Block struct {
 	PrevBlockHash []byte
 	Hash []byte
 	Nonce int
-}
-
-func (b *Block) setHash() {
-
-	timestamp := []byte(strconv.FormatInt(b.Timestamp, 10))
-	headers := bytes.Join([][]byte{b.PrevBlockHash, b.Data, timestamp}, []byte{})
-	hash := sha256.Sum256(headers)
-	b.Hash = hash[:]
 }
 
 func NewBlock(data string, prevBlockHash []byte) *Block {
@@ -34,4 +26,28 @@ func NewBlock(data string, prevBlockHash []byte) *Block {
 
 func NewGenesisBlock() *Block {
 	return NewBlock("Genesis Block", []byte{})
+}
+
+// Serialize as the database takes in only byte array
+func (b *Block) Serialize() [] byte {
+	var result bytes.Buffer
+	encoder := gob.NewEncoder(&result)
+
+	err := encoder.Encode(b)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	return result.Bytes()
+}
+
+func DeserializeBlock(d []byte) *Block {
+	var block Block
+
+	decoder := gob.NewDecoder(bytes.NewReader(d))
+	err := decoder.Decode(&block)
+	if err != nil {
+		log.Panic(err)
+	}
+	return &block
 }

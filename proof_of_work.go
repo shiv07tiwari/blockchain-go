@@ -10,7 +10,9 @@ import (
 	"fmt"
 )
 
-const targetBits = 24
+// The target to be set while mining. Calculated hash after all the shit should be smaller than taget.
+// Consider this an upper boundary.
+const targetBits = 2
 var (
 	maxNonce = math.MaxInt64
 )
@@ -30,6 +32,7 @@ func IntToHex(num int64) []byte {
 	return buff.Bytes()
 }
 
+
 func NewProofOfWork(b *Block) *ProofOfWork {
 	target := big.NewInt(1)
 	target.Lsh(target, uint(256-targetBits))
@@ -39,6 +42,8 @@ func NewProofOfWork(b *Block) *ProofOfWork {
 	return pow
 }
 
+// Data to be added into the block
+// Focus on nonce - the counter to brute force the validity
 func (pow *ProofOfWork) prepareData(nonce int) []byte {
 	data := bytes.Join(
 		[][]byte{
