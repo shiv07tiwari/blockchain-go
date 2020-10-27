@@ -68,6 +68,29 @@ func (s *State) Add(tx Tx) error {
 	return nil
 }
 
+// Persist sync the transactions with on disk dB
+func (s *State) Persist() error {
+	// make a copy of the loop
+	mem := make([]Tx, len(s.txPool))
+	copy(mem, s.txPool)
+
+	for i := 0; i < len(mem); i++ {
+		txJSON, err := json.Marshal(s.txPool[i])
+		if err != nil {
+			return err
+		}
+
+		if _, err = s.dbFile.Write(append(txJSON, '\n')); err != nil {
+			return err
+		}
+
+		// now remove the synced transaction
+		s.txPool = append(s.txPool[:i], s.txPool[i+1:]...)
+	}
+	return nil
+
+}
+
 // apply a transaction on the state
 func (s *State) apply(tx Tx) error {
 
