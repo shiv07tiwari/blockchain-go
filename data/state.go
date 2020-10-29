@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 )
 
 // State contains current state of the app
@@ -18,12 +17,7 @@ type State struct {
 // NewStateFromDisk reconstruct the blockchain from disk dB
 func NewStateFromDisk() (*State, error) {
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-
-	genesisFilePath := filepath.Join(cwd, "data", "genesis.json")
+	genesisFilePath := "/home/shivansh_tiwari/go/src/blockchain-go/data/genesis.json"
 	gen, err := loadGenesis(genesisFilePath)
 	if err != nil {
 		return nil, err
@@ -36,7 +30,7 @@ func NewStateFromDisk() (*State, error) {
 	// till here, the genesis contract is processed.
 	// now, all the transactions will be replayed
 
-	txDbFilePath := filepath.Join(cwd, "data", "tx.db")
+	txDbFilePath := "/home/shivansh_tiwari/go/src/blockchain-go/data/tx.db"
 	f, err := os.OpenFile(txDbFilePath, os.O_APPEND|os.O_RDWR, 0600)
 	if err != nil {
 		return nil, err
@@ -106,4 +100,9 @@ func (s *State) apply(tx Tx) error {
 	s.Balances[tx.To] += tx.Value
 
 	return nil
+}
+
+// Close close the dB connection
+func (s *State) Close() error {
+	return s.dbFile.Close()
 }
