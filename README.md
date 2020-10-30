@@ -8,3 +8,6 @@ A blockchian based cafe.
 * Every blockchain starts with a Genesis file which is used to distribute the first tokens to early members of the chain. It is never updated afterwards.
 * A whitepaper servers to outline the specifications of how the particular blockchain will look and behave.
 * It uses a event based architecture where the dB is the final aggregated stare after replaying all the transactions in a specific queue.
+* Implemented CLI using [Cobra](https://github.com/spf13/cobra)
+* Blockchain dB is immutable. The system is transparent, auditable and well defined.
+* It is hashed by a secure crypto hash function. A specific hash represets a particular dB state.

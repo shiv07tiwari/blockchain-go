@@ -2,6 +2,6 @@
 	"genesis_time": "2020-10-26T00:00:00.000000000Z",
 	"chain_id": "game-zone-blockchain",
 	"balances" : {
-		"shivansh": 1000000
+		"shivansh": 10000
 	}
 }

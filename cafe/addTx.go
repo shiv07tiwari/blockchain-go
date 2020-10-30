@@ -17,8 +17,9 @@ func getAddTxCommand() *cobra.Command {
 			from, _ := cmd.Flags().GetString("from")
 			to, _ := cmd.Flags().GetString("to")
 			amount, _ := cmd.Flags().GetUint("amount")
+			txData, _ := cmd.Flags().GetString("data")
 
-			tx := data.NewTx(from, to, amount, "Random")
+			tx := data.NewTx(from, to, amount, txData)
 			state, err := data.NewStateFromDisk()
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
@@ -32,7 +33,8 @@ func getAddTxCommand() *cobra.Command {
 				os.Exit(1)
 			}
 
-			err = state.Persist()
+			snapshot, err := state.Persist()
+			fmt.Printf("New Snapshot : %x\n", snapshot)
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
@@ -48,6 +50,7 @@ func getAddTxCommand() *cobra.Command {
 	addTxCommand.MarkFlagRequired("to")
 	addTxCommand.Flags().Uint("amount", 0, "Paid Amount")
 	addTxCommand.MarkFlagRequired("amount")
+	addTxCommand.Flags().String("data", "random", "Details")
 
 	return addTxCommand
 }
