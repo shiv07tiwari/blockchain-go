@@ -33,8 +33,7 @@ func getAddTxCommand() *cobra.Command {
 				os.Exit(1)
 			}
 
-			snapshot, err := state.Persist()
-			fmt.Printf("New Snapshot : %x\n", snapshot)
+			_, err = state.Persist()
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
