@@ -17,6 +17,7 @@ func main() {
 
 	tbbCmd.AddCommand(versionCmd)
 	tbbCmd.AddCommand(balencesListCmd)
+	tbbCmd.AddCommand(getAddTxCommand())
 
 	err := tbbCmd.Execute()
 	if err != nil {
