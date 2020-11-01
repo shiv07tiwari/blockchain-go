@@ -8,6 +8,7 @@ type Tx struct {
 	Data  string `json:"data"`
 }
 
+// Reward is added for people who maintain and mine blockchain
 func (t *Tx) isReward() bool {
 	return t.Data == "reward"
 }
