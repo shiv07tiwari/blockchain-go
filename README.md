@@ -12,3 +12,4 @@ A blockchian based cafe.
 * Blockchain dB is immutable. The system is transparent, auditable and well defined.
 * It is hashed by a secure crypto hash function. A specific hash represets a particular dB state.
 * A batch of transactions make a block. Each block is encoded and hashed. Block has header(parent block metadata) and payload (new dB transactions)
+* Byzantine Fault Tolerance, Proof of Work.

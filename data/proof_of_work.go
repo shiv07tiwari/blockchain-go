@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"math/big"
 )
 
@@ -15,7 +16,7 @@ import (
 // Create a nonce that starts at 0
 // Data + nonce hashed should meet the set of requirements.
 
-const difficulty = 11
+const difficulty = 16
 
 // ProofOfWork struct
 type ProofOfWork struct {
@@ -23,12 +24,12 @@ type ProofOfWork struct {
 	Target *big.Int
 }
 
-// Data struct
-type Data struct {
-	prevHash   Snapshot
-	TXs        []Tx
-	nonce      []byte
-	difficulty []byte
+// POWData struct
+type POWData struct {
+	PrevHash   Snapshot `json:"prevHash"`
+	TXs        []Tx     `json:"transactions"`
+	Nonce      []byte   `json:"nonce"`
+	Difficulty []byte   `json:"difficulty"`
 }
 
 // CreateNewProof creates a new ProofOfWork for the Block
@@ -40,11 +41,11 @@ func CreateNewProof(b *Block) *ProofOfWork {
 }
 
 // InitData returns a new data block
-func (pow *ProofOfWork) InitData(nonce int) Data {
-	data := Data{pow.Block.Header.Parent, pow.Block.TXs, toHex(int64(nonce)),
+func (pow *ProofOfWork) InitData(nonce int) POWData {
+	powData := POWData{pow.Block.Header.Parent, pow.Block.TXs, toHex(int64(nonce)),
 		toHex(int64(difficulty))}
 
-	return data
+	return powData
 }
 
 // Mine mines the block
@@ -54,12 +55,9 @@ func (pow *ProofOfWork) Mine() (int, Snapshot) {
 
 	nonce := 0
 
-	for nonce < 3 {
+	for nonce < math.MaxInt64 {
 		data := pow.InitData(nonce)
 		dataJSON, err := json.Marshal(data)
-		fmt.Println(data)
-		fmt.Println("and")
-		fmt.Println(dataJSON)
 		if err != nil {
 			log.Panic(err)
 		}
