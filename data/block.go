@@ -9,6 +9,7 @@ import (
 type Block struct {
 	Header BlockHeader
 	TXs    []Tx
+	Nonce  int
 }
 
 // BlockHeader is block's meta data
@@ -33,5 +34,5 @@ func (b Block) Hash() (Snapshot, error) {
 
 // NewBlock creates and returns a new block
 func NewBlock(snapshot Snapshot, time uint64, Txs []Tx) Block {
-	return Block{BlockHeader{snapshot, time}, Txs}
+	return Block{BlockHeader{snapshot, time}, Txs, 0}
 }

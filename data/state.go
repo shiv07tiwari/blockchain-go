@@ -73,16 +73,18 @@ func (s *State) Add(tx Tx) error {
 
 // Persist sync the transactions with on disk dB
 func (s *State) Persist() (Snapshot, error) {
-	// make a copy of the loop
+	fmt.Println("Persisting start")
 
 	block := NewBlock(
 		s.snapshot,
 		uint64(time.Now().Unix()),
 		s.txPool,
 	)
-	blockHash, err := block.Hash()
+	pow := CreateNewProof(&block)
+	nonce, hash := pow.Mine()
+	block.Nonce = nonce
 
-	blockData := BlockData{blockHash, block}
+	blockData := BlockData{hash, block}
 
 	blockDataJSON, err := json.Marshal(blockData)
 
@@ -92,7 +94,7 @@ func (s *State) Persist() (Snapshot, error) {
 	if err != nil {
 		return Snapshot{}, err
 	}
-	s.snapshot = blockHash
+	s.snapshot = hash
 	s.txPool = []Tx{}
 
 	return s.snapshot, nil
