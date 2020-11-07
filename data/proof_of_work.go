@@ -62,16 +62,31 @@ func (pow *ProofOfWork) Mine() (int, Snapshot) {
 			log.Panic(err)
 		}
 		hash = sha256.Sum256(dataJSON)
-		fmt.Printf("\r%x", hash)
-		fmt.Println("")
 		intHash.SetBytes(hash[:])
 		if intHash.Cmp(pow.Target) == -1 {
+			fmt.Println("Valid Hash : ")
+			fmt.Printf("\r%x", hash)
+			fmt.Println("")
 			break
 		} else {
 			nonce++
 		}
 	}
 	return nonce, hash
+}
+
+// Validate validates a POW
+func (pow *ProofOfWork) Validate() bool {
+	var intHash big.Int
+	data := pow.InitData(pow.Block.Nonce)
+	dataJSON, err := json.Marshal(data)
+	if err != nil {
+		log.Panic(err)
+	}
+	hash := sha256.Sum256(dataJSON)
+	intHash.SetBytes(hash[:])
+
+	return intHash.Cmp(pow.Target) == -1
 }
 
 func toHex(num int64) []byte {

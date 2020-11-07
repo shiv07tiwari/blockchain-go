@@ -3,6 +3,7 @@ package data
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -73,8 +74,6 @@ func (s *State) Add(tx Tx) error {
 
 // Persist sync the transactions with on disk dB
 func (s *State) Persist() (Snapshot, error) {
-	fmt.Println("Persisting start")
-
 	block := NewBlock(
 		s.snapshot,
 		uint64(time.Now().Unix()),
@@ -83,6 +82,10 @@ func (s *State) Persist() (Snapshot, error) {
 	pow := CreateNewProof(&block)
 	nonce, hash := pow.Mine()
 	block.Nonce = nonce
+
+	if pow.Validate() == false {
+		return Snapshot{}, errors.New("Invalid Block")
+	}
 
 	blockData := BlockData{hash, block}
 
