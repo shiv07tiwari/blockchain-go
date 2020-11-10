@@ -13,3 +13,4 @@ A blockchian based cafe.
 * It is hashed by a secure crypto hash function. A specific hash represets a particular dB state.
 * A batch of transactions make a block. Each block is encoded and hashed. Block has header(parent block metadata) and payload (new dB transactions)
 * Byzantine Fault Tolerance, Proof of Work.
+* As blockchain is public, we dont save any sensitive data in it. A transaction is represented in terms of inputs and outputs. 
