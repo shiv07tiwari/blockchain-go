@@ -1,7 +1,6 @@
 package main
 
 import (
-	"blockchain-go/data"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -12,7 +11,7 @@ var balencesListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "Lists all the User balances.",
 	Run: func(cmd *cobra.Command, args []string) {
-		state, err := data.NewStateFromDisk()
+		state, err := BlockChain.GetState()
 		if err != nil {
 			fmt.Println(err)
 		}

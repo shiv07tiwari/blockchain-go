@@ -7,6 +7,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// BlockChain state variable
+var BlockChain *Blockchain
+
 func main() {
 	var tbbCmd = &cobra.Command{
 		Use:   "cafe",
@@ -14,7 +17,7 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 		},
 	}
-
+	BlockChain, _ = NewBlockChain()
 	tbbCmd.AddCommand(versionCmd)
 	tbbCmd.AddCommand(balencesListCmd)
 	tbbCmd.AddCommand(getAddTxCommand())

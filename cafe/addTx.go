@@ -20,7 +20,7 @@ func getAddTxCommand() *cobra.Command {
 			txData, _ := cmd.Flags().GetString("data")
 
 			tx := data.NewTx(from, to, amount, txData)
-			state, err := data.NewStateFromDisk()
+			state, err := BlockChain.GetState()
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
