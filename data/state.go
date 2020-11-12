@@ -24,7 +24,7 @@ type State struct {
 func NewStateFromDisk() (*State, error) {
 
 	genesisFilePath := "/home/shivansh_tiwari/go/src/blockchain-go/data/genesis.json"
-	gen, err := loadGenesis(genesisFilePath)
+	_, gen, err := GenerateGenesis(genesisFilePath)
 	if err != nil {
 		return nil, err
 	}

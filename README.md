@@ -14,3 +14,4 @@ A blockchian based cafe.
 * A batch of transactions make a block. Each block is encoded and hashed. Block has header(parent block metadata) and payload (new dB transactions)
 * Byzantine Fault Tolerance, Proof of Work.
 * As blockchain is public, we dont save any sensitive data in it. A transaction is represented in terms of inputs and outputs. 
+* UTXO Model in Transactions. (there are no accounts or wallets at the protocol layer)

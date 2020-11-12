@@ -50,8 +50,8 @@ type TxOutput struct {
 }
 
 // CoinbaseTx is the first transaction of the blockchain.
-// It is also used during rewards.
-func CoinbaseTx(to, data string) *Transaction {
+// It is usaed during rewards and genesis block construction.
+func CoinbaseTx(to, data string) Transaction {
 	if data == "" {
 		data = fmt.Sprintf("Coins to %s", to)
 	}
@@ -60,7 +60,7 @@ func CoinbaseTx(to, data string) *Transaction {
 
 	tx := Transaction{Snapshot{}, []TxInput{txin}, []TxOutput{txout}}
 	tx.GenerateID()
-	return &tx
+	return tx
 }
 
 // GenerateID hashes the Tx
@@ -91,3 +91,10 @@ func (in *TxInput) CanUnlock(data string) bool {
 func (out *TxOutput) CanBeUnlocked(data string) bool {
 	return out.PublicKey == data
 }
+
+// // NewTransaction .
+// func NewTransaction(from, to string, amount int, state State) {
+// 	var inputs []TxInput
+// 	var outputs []TxOutput
+
+// }
