@@ -133,39 +133,3 @@ func (s *State) apply(tx Tx) error {
 func (s *State) Close() error {
 	return s.dbFile.Close()
 }
-
-// FindUnspentTransactions in the UTXO Model
-func (s *State) FindUnspentTransactions(address string) []Transaction {
-	var unspentTransactions []Transaction
-	//spendTxs := make(map[string][]int)
-
-	for _, tx := range s.getAllTransactions() {
-		if (tx.ID == Snapshot{}) {
-			// first transaction
-			break
-		}
-	}
-
-	return unspentTransactions
-}
-
-// TODO:- Replace Tx with Transaction Models
-func (s *State) getAllTransactions() []Transaction {
-	var transactions []Transaction
-
-	// scanner := bufio.NewScanner(s.dbFile)
-
-	// for scanner.Scan() {
-	// 	if err := scanner.Err(); err != nil {
-	// 		return nil
-	// 	}
-	// }
-	// var blockData BlockData
-	// json.Unmarshal(scanner.Bytes(), &blockData)
-
-	// for _, tx := range blockData.Value.TXs {
-	// 	transactions = append(transactions, tx)
-	// }
-
-	return transactions
-}
