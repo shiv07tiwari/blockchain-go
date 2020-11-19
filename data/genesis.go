@@ -12,19 +12,20 @@ type Genesis struct {
 
 // GenerateGenesis generates the GenTx.
 // TODO: Convert this to a CoinbaseTx
-func GenerateGenesis(path string) (Tx, Genesis, error) {
-	content, err := ioutil.ReadFile(path)
+func GenerateGenesis() (Tx, error) {
+	genesisFilePath := "/home/shivansh_tiwari/go/src/blockchain-go/data/genesis.json"
+	content, err := ioutil.ReadFile(genesisFilePath)
 	if err != nil {
-		return Tx{}, Genesis{}, err
+		return Tx{}, err
 	}
 	var ret Genesis
 	err = json.Unmarshal(content, &ret)
 	if err != nil {
-		return Tx{}, Genesis{}, err
+		return Tx{}, err
 	}
 	var tx Tx
 	for account, amount := range ret.Balances {
-		tx = Tx{account, account, amount, "Genesis Block"}
+		tx = Tx{account, account, amount, "reward"}
 	}
-	return tx, ret, nil
+	return tx, nil
 }

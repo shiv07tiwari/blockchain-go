@@ -23,18 +23,8 @@ type State struct {
 // NewStateFromDisk reconstruct the blockchain from disk dB
 func NewStateFromDisk() (*State, error) {
 
-	genesisFilePath := "/home/shivansh_tiwari/go/src/blockchain-go/data/genesis.json"
-	_, gen, err := GenerateGenesis(genesisFilePath)
-	if err != nil {
-		return nil, err
-	}
 	balances := make(map[string]uint)
-	for account, balance := range gen.Balances {
-		balances[account] = balance
-	}
-
-	// till here, the genesis contract is processed.
-	// now, all the transactions will be replayed
+	isFileEmpty := true
 
 	txDbFilePath := "/home/shivansh_tiwari/go/src/blockchain-go/data/tx.db"
 	f, err := os.OpenFile(txDbFilePath, os.O_APPEND|os.O_RDWR, 0600)
@@ -53,12 +43,29 @@ func NewStateFromDisk() (*State, error) {
 		json.Unmarshal(scanner.Bytes(), &blockData)
 
 		for _, tx := range blockData.Value.TXs {
+			isFileEmpty = false
 			if err := state.apply(tx); err != nil {
 				return nil, err
 			}
 		}
 		state.snapshot = blockData.Key
 
+	}
+
+	// Persist the genesis Block if not already done
+	if isFileEmpty {
+		tx, err := GenerateGenesis()
+		if err != nil {
+			return nil, err
+		}
+		err = state.Add(tx)
+		if err != nil {
+			return nil, err
+		}
+		_, err = state.Persist()
+		if err != nil {
+			return nil, err
+		}
 	}
 	return state, nil
 }
@@ -125,4 +132,40 @@ func (s *State) apply(tx Tx) error {
 // Close close the dB connection
 func (s *State) Close() error {
 	return s.dbFile.Close()
+}
+
+// FindUnspentTransactions in the UTXO Model
+func (s *State) FindUnspentTransactions(address string) []Transaction {
+	var unspentTransactions []Transaction
+	//spendTxs := make(map[string][]int)
+
+	for _, tx := range s.getAllTransactions() {
+		if (tx.ID == Snapshot{}) {
+			// first transaction
+			break
+		}
+	}
+
+	return unspentTransactions
+}
+
+// TODO:- Replace Tx with Transaction Models
+func (s *State) getAllTransactions() []Transaction {
+	var transactions []Transaction
+
+	// scanner := bufio.NewScanner(s.dbFile)
+
+	// for scanner.Scan() {
+	// 	if err := scanner.Err(); err != nil {
+	// 		return nil
+	// 	}
+	// }
+	// var blockData BlockData
+	// json.Unmarshal(scanner.Bytes(), &blockData)
+
+	// for _, tx := range blockData.Value.TXs {
+	// 	transactions = append(transactions, tx)
+	// }
+
+	return transactions
 }
