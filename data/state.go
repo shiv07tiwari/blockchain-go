@@ -15,16 +15,15 @@ type Snapshot [32]byte
 
 // State contains current state of the app
 type State struct {
-	Balances map[string]int
 	txPool   []Tx
 	dbFile   *os.File
-	snapshot [32]byte
+	Snapshot [32]byte
+	Users    map[string]bool
 }
 
 // NewStateFromDisk reconstruct the blockchain from disk dB
 func NewStateFromDisk() (*State, error) {
 
-	balances := make(map[string]int)
 	isFileEmpty := true
 
 	txDbFilePath := "/home/shivansh_tiwari/go/src/blockchain-go/data/tx.db"
@@ -34,7 +33,8 @@ func NewStateFromDisk() (*State, error) {
 	}
 
 	scanner := bufio.NewScanner(f)
-	state := &State{balances, make([]Tx, 0), f, Snapshot{}}
+	users := make(map[string]bool)
+	state := &State{make([]Tx, 0), f, Snapshot{}, users}
 
 	for scanner.Scan() {
 		isFileEmpty = false
@@ -43,7 +43,21 @@ func NewStateFromDisk() (*State, error) {
 		}
 		var blockData BlockData
 		json.Unmarshal(scanner.Bytes(), &blockData)
-		state.snapshot = blockData.Key
+
+		for _, tx := range blockData.Value.TXs {
+			for _, in := range tx.Inputs {
+				if _, ok := state.Users[in.Sig]; !ok {
+					users[in.Sig] = true
+				}
+			}
+			for _, out := range tx.Outputs {
+				if _, ok := state.Users[out.PubKey]; !ok {
+					users[out.PubKey] = true
+				}
+			}
+		}
+
+		state.Snapshot = blockData.Key
 	}
 	// Persist the genesis Block if not already done
 	if isFileEmpty {
@@ -52,6 +66,7 @@ func NewStateFromDisk() (*State, error) {
 			return nil, err
 		}
 		err = state.Add(tx)
+		state.Users[tx.Inputs[0].Sig] = true
 		if err != nil {
 			return nil, err
 		}
@@ -63,13 +78,6 @@ func NewStateFromDisk() (*State, error) {
 	return state, nil
 }
 
-// AddUser .
-func (s *State) AddUser(id string) {
-	if _, ok := s.Balances[id]; !ok {
-		s.Balances[id] = 0
-	}
-}
-
 // Add a transaction to State
 func (s *State) Add(tx Tx) error {
 	s.txPool = append(s.txPool, tx)
@@ -79,7 +87,7 @@ func (s *State) Add(tx Tx) error {
 // Persist sync the transactions with on disk dB
 func (s *State) Persist() (Snapshot, error) {
 	block := NewBlock(
-		s.snapshot,
+		s.Snapshot,
 		uint64(time.Now().Unix()),
 		s.txPool,
 	)
@@ -101,10 +109,10 @@ func (s *State) Persist() (Snapshot, error) {
 	if err != nil {
 		return Snapshot{}, err
 	}
-	s.snapshot = hash
+	s.Snapshot = hash
 	s.txPool = []Tx{}
 
-	return s.snapshot, nil
+	return s.Snapshot, nil
 
 }
 
@@ -114,50 +122,28 @@ func (s *State) Close() error {
 }
 
 // GetSpendableOutputs .
-func (s *State) GetSpendableOutputs(address string, amount int) (int, map[string][]int) {
+func (s *State) GetSpendableOutputs(address string) (int, map[string][]int) {
 	unspentOuts := make(map[string][]int)
 	unspentTxs := s.FindUnspentTransactions(address)
 	collected := 0
 
-Found:
 	for _, tx := range unspentTxs {
-		fmt.Println(tx)
-		fmt.Println("transaction")
 		txID := hex.EncodeToString(tx.ID[:])
 
 		for outID, out := range tx.Outputs {
-			if out.CanBeUnlocked(address) && collected < amount {
-				collected += out.Value
-				unspentOuts[txID] = append(unspentOuts[txID], outID)
-
-				if collected >= amount {
-					break Found
-				}
-			}
-		}
-	}
-	fmt.Println("collected")
-	fmt.Println(collected)
-	return collected, unspentOuts
-}
-
-// CalculateBalance .
-func (s *State) CalculateBalance(address string) int {
-	unspentTxs := s.FindUnspentTransactions(address)
-	collected := 0
-	for _, tx := range unspentTxs {
-		for _, out := range tx.Outputs {
 			if out.CanBeUnlocked(address) {
 				collected += out.Value
+				unspentOuts[txID] = append(unspentOuts[txID], outID)
 			}
 		}
 	}
-	return collected
+	return collected, unspentOuts
 }
 
 // FindUnspentTransactions .
 func (s *State) FindUnspentTransactions(address string) []Tx {
 	var unspentTxs []Tx
+	var blocks []BlockData
 
 	spentTXOs := make(map[string][]int)
 
@@ -169,7 +155,23 @@ func (s *State) FindUnspentTransactions(address string) []Tx {
 		}
 		var blockData BlockData
 		json.Unmarshal(scanner.Bytes(), &blockData)
+		blocks = append(blocks, blockData)
+	}
 
+	for _, blockData := range blocks {
+		for _, tx := range blockData.Value.TXs {
+			if tx.IsCoinbase() == false {
+				for _, in := range tx.Inputs {
+					if in.CanUnlock(address) {
+						inTxID := hex.EncodeToString(in.ID)
+						spentTXOs[inTxID] = append(spentTXOs[inTxID], in.Out)
+					}
+				}
+			}
+		}
+	}
+
+	for _, blockData := range blocks {
 		for _, tx := range blockData.Value.TXs {
 			txID := hex.EncodeToString(tx.ID[:])
 		Outputs:
@@ -183,14 +185,6 @@ func (s *State) FindUnspentTransactions(address string) []Tx {
 				}
 				if out.CanBeUnlocked(address) {
 					unspentTxs = append(unspentTxs, tx)
-				}
-			}
-			if tx.IsCoinbase() == false {
-				for _, in := range tx.Inputs {
-					if in.CanUnlock(address) {
-						inTxID := hex.EncodeToString(in.ID)
-						spentTXOs[inTxID] = append(spentTXOs[inTxID], in.Out)
-					}
 				}
 			}
 		}

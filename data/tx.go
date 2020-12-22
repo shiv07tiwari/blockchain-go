@@ -22,15 +22,21 @@ type Tx struct {
 
 // TxOutput data structure
 type TxOutput struct {
-	//
-	Value  int
+	// Value is the amount in the transaction.
+	Value int
+	// Account public key which is used to unlock the output by a particular address
 	PubKey string
 }
 
-// TxInput .
+// TxInput data structure
+// Input refers to the output transaction of previously made transactions.
 type TxInput struct {
-	ID  []byte
+
+	// ID of the reference Tx
+	ID []byte
+	// Index of the reference Tx
 	Out int
+	// Account string, connecting the Input and Output
 	Sig string
 }
 
@@ -55,7 +61,7 @@ func CoinbaseTx(to, data string, amount int) Tx {
 		data = fmt.Sprintf("Coins to %s", to)
 	}
 
-	txin := TxInput{[]byte{}, -1, data}
+	txin := TxInput{[]byte{}, -1, to}
 	txout := TxOutput{amount, to}
 
 	tx := Tx{Snapshot{}, []TxInput{txin}, []TxOutput{txout}}
@@ -68,7 +74,7 @@ func CoinbaseTx(to, data string, amount int) Tx {
 func NewTransaction(from, to string, amount int, state *State) Tx {
 	var inputs []TxInput
 	var outputs []TxOutput
-	availabe, unspentOutputs := state.GetSpendableOutputs(from, amount)
+	availabe, unspentOutputs := state.GetSpendableOutputs(from)
 
 	if availabe < amount {
 		log.Panic("Insufficient")
@@ -76,14 +82,17 @@ func NewTransaction(from, to string, amount int, state *State) Tx {
 
 	for txid, outs := range unspentOutputs {
 		txID, err := hex.DecodeString(txid)
+
 		if err != nil {
 			return Tx{}
 		}
+
 		for _, out := range outs {
 			input := TxInput{txID, out, from}
 			inputs = append(inputs, input)
 		}
 	}
+
 	outputs = append(outputs, TxOutput{amount, to})
 
 	if availabe > amount {

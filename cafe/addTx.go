@@ -25,10 +25,6 @@ func getAddTxCommand() *cobra.Command {
 			// Get the state variable of the blockchain.
 			state, err := BlockChain.GetState()
 
-			// Add the users to the state if they dont exist in the dB
-			state.AddUser(from)
-			state.AddUser(to)
-
 			// Create the transaction
 			tx := data.NewTransaction(from, to, amount, state)
 

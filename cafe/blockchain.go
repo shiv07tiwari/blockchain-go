@@ -1,6 +1,8 @@
 package main
 
-import "blockchain-go/data"
+import (
+	"blockchain-go/data"
+)
 
 // Blockchain struct
 type Blockchain struct {
