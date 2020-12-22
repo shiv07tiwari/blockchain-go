@@ -2,6 +2,7 @@ package data
 
 import (
 	"bufio"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,7 +15,7 @@ type Snapshot [32]byte
 
 // State contains current state of the app
 type State struct {
-	Balances map[string]uint
+	Balances map[string]int
 	txPool   []Tx
 	dbFile   *os.File
 	snapshot [32]byte
@@ -23,7 +24,7 @@ type State struct {
 // NewStateFromDisk reconstruct the blockchain from disk dB
 func NewStateFromDisk() (*State, error) {
 
-	balances := make(map[string]uint)
+	balances := make(map[string]int)
 	isFileEmpty := true
 
 	txDbFilePath := "/home/shivansh_tiwari/go/src/blockchain-go/data/tx.db"
@@ -36,22 +37,14 @@ func NewStateFromDisk() (*State, error) {
 	state := &State{balances, make([]Tx, 0), f, Snapshot{}}
 
 	for scanner.Scan() {
+		isFileEmpty = false
 		if err := scanner.Err(); err != nil {
 			return nil, err
 		}
 		var blockData BlockData
 		json.Unmarshal(scanner.Bytes(), &blockData)
-
-		for _, tx := range blockData.Value.TXs {
-			isFileEmpty = false
-			if err := state.apply(tx); err != nil {
-				return nil, err
-			}
-		}
 		state.snapshot = blockData.Key
-
 	}
-
 	// Persist the genesis Block if not already done
 	if isFileEmpty {
 		tx, err := GenerateGenesis()
@@ -70,11 +63,15 @@ func NewStateFromDisk() (*State, error) {
 	return state, nil
 }
 
+// AddUser .
+func (s *State) AddUser(id string) {
+	if _, ok := s.Balances[id]; !ok {
+		s.Balances[id] = 0
+	}
+}
+
 // Add a transaction to State
 func (s *State) Add(tx Tx) error {
-	if err := s.apply(tx); err != nil {
-		return err
-	}
 	s.txPool = append(s.txPool, tx)
 	return nil
 }
@@ -111,25 +108,92 @@ func (s *State) Persist() (Snapshot, error) {
 
 }
 
-// apply a transaction on the state
-func (s *State) apply(tx Tx) error {
-
-	// skipping the validation during reward
-	if tx.isReward() {
-		s.Balances[tx.To] += tx.Value
-		return nil
-	}
-	if tx.Value > s.Balances[tx.From] {
-		return fmt.Errorf("insufficient balance")
-	}
-
-	s.Balances[tx.From] -= tx.Value
-	s.Balances[tx.To] += tx.Value
-
-	return nil
-}
-
 // Close close the dB connection
 func (s *State) Close() error {
 	return s.dbFile.Close()
+}
+
+// GetSpendableOutputs .
+func (s *State) GetSpendableOutputs(address string, amount int) (int, map[string][]int) {
+	unspentOuts := make(map[string][]int)
+	unspentTxs := s.FindUnspentTransactions(address)
+	collected := 0
+
+Found:
+	for _, tx := range unspentTxs {
+		fmt.Println(tx)
+		fmt.Println("transaction")
+		txID := hex.EncodeToString(tx.ID[:])
+
+		for outID, out := range tx.Outputs {
+			if out.CanBeUnlocked(address) && collected < amount {
+				collected += out.Value
+				unspentOuts[txID] = append(unspentOuts[txID], outID)
+
+				if collected >= amount {
+					break Found
+				}
+			}
+		}
+	}
+	fmt.Println("collected")
+	fmt.Println(collected)
+	return collected, unspentOuts
+}
+
+// CalculateBalance .
+func (s *State) CalculateBalance(address string) int {
+	unspentTxs := s.FindUnspentTransactions(address)
+	collected := 0
+	for _, tx := range unspentTxs {
+		for _, out := range tx.Outputs {
+			if out.CanBeUnlocked(address) {
+				collected += out.Value
+			}
+		}
+	}
+	return collected
+}
+
+// FindUnspentTransactions .
+func (s *State) FindUnspentTransactions(address string) []Tx {
+	var unspentTxs []Tx
+
+	spentTXOs := make(map[string][]int)
+
+	scanner := bufio.NewScanner(s.dbFile)
+	s.dbFile.Seek(0, 0)
+	for scanner.Scan() {
+		if err := scanner.Err(); err != nil {
+			return nil
+		}
+		var blockData BlockData
+		json.Unmarshal(scanner.Bytes(), &blockData)
+
+		for _, tx := range blockData.Value.TXs {
+			txID := hex.EncodeToString(tx.ID[:])
+		Outputs:
+			for outIDX, out := range tx.Outputs {
+				if spentTXOs[txID] != nil {
+					for _, spentOut := range spentTXOs[txID] {
+						if spentOut == outIDX {
+							continue Outputs
+						}
+					}
+				}
+				if out.CanBeUnlocked(address) {
+					unspentTxs = append(unspentTxs, tx)
+				}
+			}
+			if tx.IsCoinbase() == false {
+				for _, in := range tx.Inputs {
+					if in.CanUnlock(address) {
+						inTxID := hex.EncodeToString(in.ID)
+						spentTXOs[inTxID] = append(spentTXOs[inTxID], in.Out)
+					}
+				}
+			}
+		}
+	}
+	return unspentTxs
 }

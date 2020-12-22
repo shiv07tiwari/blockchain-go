@@ -11,6 +11,7 @@ import (
 	"math/big"
 )
 
+// Basic logic of proof of work :-
 // We force the network to work to add the block into the blockchain
 // Work is heavy, and validation is simple
 // Create a nonce that starts at 0

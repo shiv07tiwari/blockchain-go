@@ -1,3 +1,4 @@
+// Child command to add a new transaction in the blockchain
 package main
 
 import (
@@ -9,44 +10,71 @@ import (
 )
 
 func getAddTxCommand() *cobra.Command {
-	// command to add the transaction
+
 	var addTxCommand = &cobra.Command{
 		Use:   "add",
 		Short: "Adds a new Transaction to Database",
 		Run: func(cmd *cobra.Command, args []string) {
+
+			// Get the values entered for the respective flags
 			from, _ := cmd.Flags().GetString("from")
 			to, _ := cmd.Flags().GetString("to")
-			amount, _ := cmd.Flags().GetUint("amount")
+			amount, _ := cmd.Flags().GetInt("amount")
 			txData, _ := cmd.Flags().GetString("data")
 
-			tx := data.NewTx(from, to, amount, txData)
+			// Get the state variable of the blockchain.
 			state, err := BlockChain.GetState()
+
+			// Add the users to the state if they dont exist in the dB
+			state.AddUser(from)
+			state.AddUser(to)
+
+			// Create the transaction
+			tx := data.NewTransaction(from, to, amount, state)
+
+			// Handle the error and log the required data
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
+				fmt.Println(txData)
 				os.Exit(1)
 			}
+
+			// Close the db Instance using defer, i.e. once the function returns to the caller.
 			defer state.Close()
+
+			// Add the new transaction to the state
 			err = state.Add(tx)
+
+			// Handle the error and log the required data
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
+
+			// Write the new transaction to the persistent database.
 			_, err = state.Persist()
+
+			// Handle the error and log the required data to standard error file descriptor
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
+
+			// Print out the success message
 			fmt.Println("Transaction Successful")
 
 		},
 	}
 
+	// Add flags to the command and mark them as required.(as these are required values for a new Tx)
 	addTxCommand.Flags().String("from", "null", "Paid From")
 	addTxCommand.MarkFlagRequired("from")
 	addTxCommand.Flags().String("to", "null", "Paid To")
 	addTxCommand.MarkFlagRequired("to")
-	addTxCommand.Flags().Uint("amount", 0, "Paid Amount")
+	addTxCommand.Flags().Int("amount", 0, "Paid Amount")
 	addTxCommand.MarkFlagRequired("amount")
+
+	// Add description flag, which is optional.
 	addTxCommand.Flags().String("data", "random", "Details")
 
 	return addTxCommand

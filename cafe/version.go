@@ -4,7 +4,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// A simple command to print the version
+// A simple command to print the version.
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Describes version.",
