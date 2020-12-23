@@ -74,7 +74,6 @@ func (pow *ProofOfWork) Mine() (int, Snapshot) {
 			fmt.Printf("\r%x", hash)
 			fmt.Println("")
 			break
-
 		} else {
 			// Increment the Nonce
 			nonce++

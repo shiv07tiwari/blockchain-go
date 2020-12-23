@@ -41,12 +41,16 @@ type TxInput struct {
 
 // SetID encodes the complete Tx into a byte array
 func (tx *Tx) SetID() {
+
+	// Create a variable sized byte buffer
 	var encoded bytes.Buffer
 	var hash [32]byte
 
+	// Get a new encoder and transmit the data of Tx
 	encode := gob.NewEncoder(&encoded)
 	encode.Encode(tx)
 
+	// Get a fixed size byte array encrypted checksum
 	hash = sha256.Sum256(encoded.Bytes())
 	tx.ID = hash
 }
