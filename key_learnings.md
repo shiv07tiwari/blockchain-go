@@ -12,3 +12,9 @@
 * As blockchain is public, we dont save any sensitive data in it. A transaction is represented in terms of inputs and outputs. 
 * UTXO Model in Transactions. (there are no accounts or wallets at the protocol layer)
 * Unspent Transaction Outputs or UTXOs serve as globally-accessible evidence that you have Bitcoin in your digital wallet.
+
+# Future Scope
+
+* Implement Proof of Concept for consensus
+* Create a distributed P2P network to understand the blockchain better
+* Implement Clean Architecture in the code
