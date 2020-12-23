@@ -26,10 +26,10 @@ var balancesListCmd = &cobra.Command{
 		fmt.Println("Balance Sheet")
 		fmt.Println("__________________")
 
-		for user, _ := range state.Users {
-			fmt.Println("UserName : ", user)
+		// Iterate over all the users and calculate the balance
+		for user := range state.Users {
 			collected, _ := state.GetSpendableOutputs(user)
-			fmt.Println("Balance : ", collected)
+			fmt.Println("UserName : ", user, "Balance : ", collected)
 		}
 
 		// Iterate over all the balances in our state, and print out the account name and balance.

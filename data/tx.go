@@ -5,8 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/gob"
 	"encoding/hex"
-	"fmt"
-	"log"
+	"errors"
 )
 
 // Tx trasaction data structure
@@ -32,24 +31,21 @@ type TxOutput struct {
 // Input refers to the output transaction of previously made transactions.
 type TxInput struct {
 
-	// ID of the reference Tx
+	// ID of the Tx which contains the reference Output
 	ID []byte
-	// Index of the reference Tx
+	// Index of the reference Output
 	Out int
 	// Account string, connecting the Input and Output
 	Sig string
 }
 
-// SetID for the transaction
+// SetID encodes the complete Tx into a byte array
 func (tx *Tx) SetID() {
 	var encoded bytes.Buffer
 	var hash [32]byte
 
 	encode := gob.NewEncoder(&encoded)
-	err := encode.Encode(tx)
-	if err != nil {
-		log.Panic("Error in setting Id")
-	}
+	encode.Encode(tx)
 
 	hash = sha256.Sum256(encoded.Bytes())
 	tx.ID = hash
@@ -57,10 +53,8 @@ func (tx *Tx) SetID() {
 
 // CoinbaseTx which will be used in Genesis and Rewards
 func CoinbaseTx(to, data string, amount int) Tx {
-	if data == "" {
-		data = fmt.Sprintf("Coins to %s", to)
-	}
 
+	// The coinbase input will refer to a null output
 	txin := TxInput{[]byte{}, -1, to}
 	txout := TxOutput{amount, to}
 
@@ -70,52 +64,60 @@ func CoinbaseTx(to, data string, amount int) Tx {
 	return tx
 }
 
-// NewTransaction .
-func NewTransaction(from, to string, amount int, state *State) Tx {
+// NewTransaction creates a new transaction
+func NewTransaction(from, to string, amount int, state *State) (Tx, error) {
 	var inputs []TxInput
 	var outputs []TxOutput
+
+	// Get the spendable outputs for the sender
 	availabe, unspentOutputs := state.GetSpendableOutputs(from)
 
+	// If availabe amount for sender is less than the Tx amount, return Insufficient Error
 	if availabe < amount {
-		log.Panic("Insufficient")
+		return Tx{}, errors.New("Insufficient Balance")
 	}
 
+	// Iterate over the unspent Outputs
 	for txid, outs := range unspentOutputs {
 		txID, err := hex.DecodeString(txid)
 
 		if err != nil {
-			return Tx{}
+			return Tx{}, err
 		}
 
+		// Create the input referring to the unspent outputs
 		for _, out := range outs {
 			input := TxInput{txID, out, from}
 			inputs = append(inputs, input)
 		}
 	}
 
+	// Create the Tx output
 	outputs = append(outputs, TxOutput{amount, to})
 
+	// Create a new output to return the remaining money back to the sender.
 	if availabe > amount {
 		outputs = append(outputs, TxOutput{availabe - amount, from})
 	}
 
+	// Create Tx, set its Id and return
 	tx := Tx{Snapshot{}, inputs, outputs}
 	tx.SetID()
 
-	return tx
+	return tx, nil
 }
 
-// IsCoinbase .
+// IsCoinbase is a helper function to tell if the Tx is coinbase or not
 func (tx *Tx) IsCoinbase() bool {
 	return len(tx.Inputs) == 1 && len(tx.Inputs[0].ID) == 0 && tx.Inputs[0].Out == -1
 }
 
-// CanUnlock .
-func (in *TxInput) CanUnlock(data string) bool {
-	return in.Sig == data
+// CanUnlock checks if an input can be used by an address
+func (in *TxInput) CanUnlock(address string) bool {
+	return in.Sig == address
 }
 
-// CanBeUnlocked .
-func (out *TxOutput) CanBeUnlocked(data string) bool {
-	return out.PubKey == data
+// CanBeUnlocked checks if an output can be used by an address
+func (out *TxOutput) CanBeUnlocked(address string) bool {
+	return out.PubKey == address
 }

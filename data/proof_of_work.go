@@ -1,9 +1,7 @@
 package data
 
 import (
-	"bytes"
 	"crypto/sha256"
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -29,13 +27,15 @@ type ProofOfWork struct {
 type POWData struct {
 	PrevHash   Snapshot `json:"prevHash"`
 	TXs        []Tx     `json:"transactions"`
-	Nonce      []byte   `json:"nonce"`
-	Difficulty []byte   `json:"difficulty"`
+	Nonce      int      `json:"nonce"`
+	Difficulty int      `json:"difficulty"`
 }
 
 // CreateNewProof creates a new ProofOfWork for the Block
 func CreateNewProof(b *Block) *ProofOfWork {
 	target := big.NewInt(1)
+
+	// Left shift the value of 1 as per the difficulty
 	target.Lsh(target, uint(265-difficulty))
 	pow := &ProofOfWork{b, target}
 	return pow
@@ -43,8 +43,8 @@ func CreateNewProof(b *Block) *ProofOfWork {
 
 // InitData returns a new data block
 func (pow *ProofOfWork) InitData(nonce int) POWData {
-	powData := POWData{pow.Block.Header.Parent, pow.Block.TXs, toHex(int64(nonce)),
-		toHex(int64(difficulty))}
+	powData := POWData{pow.Block.Header.Parent, pow.Block.TXs, nonce,
+		difficulty}
 
 	return powData
 }
@@ -56,20 +56,27 @@ func (pow *ProofOfWork) Mine() (int, Snapshot) {
 
 	nonce := 0
 
+	// Iterate over for the value of Nonce
 	for nonce < math.MaxInt64 {
 		data := pow.InitData(nonce)
 		dataJSON, err := json.Marshal(data)
 		if err != nil {
 			log.Panic(err)
 		}
+
 		hash = sha256.Sum256(dataJSON)
 		intHash.SetBytes(hash[:])
+
+		// Set the valid hash if the condition is satisfied
 		if intHash.Cmp(pow.Target) == -1 {
+
 			fmt.Println("Valid Hash : ")
 			fmt.Printf("\r%x", hash)
 			fmt.Println("")
 			break
+
 		} else {
+			// Increment the Nonce
 			nonce++
 		}
 	}
@@ -88,13 +95,4 @@ func (pow *ProofOfWork) Validate() bool {
 	intHash.SetBytes(hash[:])
 
 	return intHash.Cmp(pow.Target) == -1
-}
-
-func toHex(num int64) []byte {
-	buff := new(bytes.Buffer)
-	err := binary.Write(buff, binary.BigEndian, num)
-	if err != nil {
-		log.Panic(err)
-	}
-	return buff.Bytes()
 }

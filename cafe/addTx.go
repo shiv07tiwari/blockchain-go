@@ -26,12 +26,12 @@ func getAddTxCommand() *cobra.Command {
 			state, err := BlockChain.GetState()
 
 			// Create the transaction
-			tx := data.NewTransaction(from, to, amount, state)
+			tx, err := data.NewTransaction(from, to, amount, state)
 
 			// Handle the error and log the required data
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
-				fmt.Println(txData)
+				fmt.Println("Tx detail : ", txData)
 				os.Exit(1)
 			}
 
